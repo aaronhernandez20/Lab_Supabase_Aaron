@@ -1,0 +1,37 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Galería (Supabase Storage)</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (loading()) {
+    <div class="center"><ion-spinner></ion-spinner></div>
+  } @else {
+    <div class="grid">
+      @for (img of images(); track img.name) {
+        <ion-card>
+          <img [src]="img.url" [alt]="img.name" loading="lazy" />
+          <ion-card-header>
+            <ion-card-title>{{ title(img.name) }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>{{ img.name }}</ion-card-content>
+        </ion-card>
+      } @empty {
+        <p class="center">No hay imágenes en el bucket.</p>
+      }
+    </div>
+  }
+
+  <ion-toast
+    [isOpen]="isToastOpen()"
+    [message]="toastMessage()"
+    [duration]="3000"
+    (didDismiss)="isToastOpen.set(false)">
+  </ion-toast>
+</ion-content>

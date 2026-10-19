@@ -1,20 +1,117 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/galeria">
+        <ion-icon slot="start" name="images-outline"></ion-icon>
+        Galería
+      </ion-button>
+    </ion-buttons>
+    <ion-title>DAM CRM - Gestión de Clientes</ion-title>
+    <ion-buttons slot="end">
+      @if (currentUser()) {
+        <span class="role-badge">{{ currentUser()?.email }} ({{ isAdmin() ?? '...' }})</span>
+        <ion-button (click)="doLogout()">
+          <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+        </ion-button>
+      } @else {
+        <ion-button (click)="openLogin()">
+          <ion-icon slot="start" name="log-in-outline"></ion-icon>
+          Entrar
+        </ion-button>
+      }
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+  <!-- LOGIN: solo aparece cuando se intenta insertar/editar/borrar sin sesión -->
+  @if (showLogin() && !currentUser()) {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Iniciar sesión</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <form [formGroup]="loginForm" (ngSubmit)="doLogin()">
+          <ion-input label="Email" labelPlacement="stacked" type="email" formControlName="email"></ion-input>
+          <ion-input label="Contraseña" labelPlacement="stacked" type="password" formControlName="password"></ion-input>
+          <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="loginForm.invalid">
+            Entrar
+          </ion-button>
+          <ion-button type="button" fill="clear" expand="block" color="medium" (click)="cancelLogin()">
+            Cancelar
+          </ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <!-- FORMULARIO REACTIVO (solo admins, tras pulsar Nuevo o Editar) -->
+  @if (showForm() && isAdmin() === 'admin') {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>{{ editingClientId() ? 'Editar Cliente' : 'Nuevo Cliente' }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <form [formGroup]="clientForm" (ngSubmit)="saveClient()">
+          <ion-input label="Nombre" labelPlacement="stacked" type="text" formControlName="nombre"></ion-input>
+          <ion-input label="Empresa" labelPlacement="stacked" type="text" formControlName="empresa"></ion-input>
+          <ion-input label="Email" labelPlacement="stacked" type="email" formControlName="email"></ion-input>
+
+          <div class="ion-margin-top">
+            <ion-button type="submit" expand="block" [disabled]="clientForm.invalid">
+              {{ editingClientId() ? 'Actualizar' : 'Guardar' }}
+            </ion-button>
+            <ion-button type="button" fill="clear" expand="block" color="medium" (click)="resetForm()">
+              Cancelar
+            </ion-button>
+          </div>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <!-- LISTA DE CLIENTES (pública) -->
+  <h3>Listado de Clientes</h3>
+
+  @if (canWrite() && !showForm()) {
+    <ion-button expand="block" (click)="newClient()">
+      <ion-icon slot="start" name="add-outline"></ion-icon>
+      Nuevo cliente
+    </ion-button>
+  }
+
+  <ion-list>
+    @for (client of clients(); track client.id) {
+      <ion-item>
+        <ion-label>
+          <h2>{{ client.nombre }}</h2>
+          <p>{{ client.empresa }} | {{ client.email }}</p>
+        </ion-label>
+
+        <!-- Botones visibles: sin sesión (piden login) o administradores -->
+        @if (canWrite()) {
+          <ion-button slot="end" fill="outline" color="primary" (click)="editClient(client)">
+            <ion-icon slot="start" name="create-outline"></ion-icon>
+            Editar
+          </ion-button>
+          <ion-button slot="end" fill="outline" color="danger" (click)="deleteClient(client.id!)">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Borrar
+          </ion-button>
+        }
+      </ion-item>
+    } @empty {
+      <ion-item>
+        <ion-label color="medium">No hay clientes registrados.</ion-label>
+      </ion-item>
+    }
+  </ion-list>
+
+  <ion-toast
+    [isOpen]="isToastOpen()"
+    [message]="toastMessage()"
+    [duration]="2500"
+    (didDismiss)="setToastOpen(false)">
+  </ion-toast>
 </ion-content>
